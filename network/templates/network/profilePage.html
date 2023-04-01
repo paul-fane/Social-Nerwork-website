@@ -1,0 +1,256 @@
+{% extends "network/layout.html" %}
+{% load static %}
+
+{% block body %}
+    <div class="container-post">
+        <div class="card">
+            <div class="top-card">
+                <div class="image-container">
+                    {% if image %}
+                        <img src="{{image.profile_image.url}}" class="rounded-circle card-img-top" width="15px" alt="...">
+                    {% else %}
+                        <img src="{% static 'default-profile.png' %}" class="rounded-circle card-img-top" width="15px" alt="...">
+                    {% endif %}
+                    {% if user.username == profiluser.username and user.is_authenticated %}
+                        <span class=" top-0 start-100 translate-middle badge rounded-pill">
+                            <button type="button" data-bs-toggle="modal" data-bs-target="#imageModal"><img src="{% static 'camera-fill.svg' %}" ></button>
+                        </span>
+                        <!-- Modal -->
+                        <div class="modal fade" id="imageModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+                            <div class="modal-dialog">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                <h1 class="modal-title fs-5" id="exampleModalLabel">Upload Profile Image</h1>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                </div>
+                                    <form action="/addProfileImage-{{profiluser.username}}" method="POST" enctype="multipart/form-data">
+                                    <div class="modal-body">
+                                    {% csrf_token %}
+                            
+                                    {{form}}
+                                    </div>
+                                    <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                                    <button type="submit" class="btn btn-primary">Save</button>
+                                    </form>
+                                </div>
+                            </div>
+                            </div>
+                        </div>
+                    {% endif %}
+                </div>
+                <div class="card-body">
+                    <!-- Username and follow button-->
+                    <div class="top-card">
+                        <!-- Username -->
+                        <h5 class="card-title" id="username" data-profile="{{profiluser.username}}">{{profiluser.username}}</h5>
+    
+                        <!-- Button Follow/Unfollow -->
+                        {% if loginUser != profiluser and user.is_authenticated %}
+                            <a id="follow-butoon"  class="btn btn-outline-secondary">
+                                {% if follow %}
+                                    Unfollow
+                                {% else %}
+                                    Follow
+                                {% endif %}
+                            </a> 
+                        {% endif %}
+                    </div>
+    
+                    <!-- Followers and Following-->
+                    <div class="links-profile">
+                        <a class="card-text a-tag">{{numberPosts}} Posts</a>
+                        <!-- Button trigger modal -->
+                        <a id="num-followers" class="card-text a-tag followers" data-profile="{{profiluser.username}}" data-bs-toggle="modal" data-bs-target="#followers-{{profiluser.username}}">
+                            {{numFollowers}} Followers
+                        </a>
+                        
+                        <!-- Modal -->
+                        <div class="modal fade" id="followers-{{profiluser.username}}" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+                            <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+                                <div class="modal-content">
+                                    <div class="modal-header">
+                                        <h1 class="modal-title fs-5" id="exampleModalLabel">Followers</h1>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                    </div>
+                                    <div class="modal-body" id="modal-followers-{{profiluser.username}}">
+                                        <!-- Fetch followers users in JS -->
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+    
+                        <!-- Button trigger modal -->
+                        <a class="card-text a-tag following" data-profile="{{profiluser.username}}" data-bs-toggle="modal" data-bs-target="#following-{{profiluser.username}}">{{numFollowing}} Following</a>
+    
+                        <!-- Modal -->
+                        <div class="modal fade" id="following-{{profiluser.username}}" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+                            <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+                                <div class="modal-content">
+                                    <div class="modal-header">
+                                        <h1 class="modal-title fs-5" id="exampleModalLabel">Following</h1>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                    </div>
+                                    <div class="modal-body" id="modal-following-{{profiluser.username}}">
+                                        <!-- Fetch following users in JS -->
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!--Show all posts-->
+    {% for post in page_obj %}
+    <div class="container-post">
+        <div class="card">
+            <div class="card-body">
+                <div class="top-card">
+                    <div class="profile-image" id="profile-image-{{post.id_user}}{{post.id}}" data-postid="{{post.id}}" data-iduser="{{post.id_user}}"></div>
+                    
+                    <a class="a-tag" href="{% url 'profilePage' post.id_user %}"><h5 class="card-title">{{post.id_user}}</h5></a>
+                    <p class="card-text post-time"><small class="text-muted">Created at: {{post.created_at}}</small></p>
+                    <!--User can edit their own posts-->
+                    {% if user == post.id_user %}
+                        <div class="edit-button-position">
+                            <button class="btn btn-outline-secondary edit" data-postid="{{post.id}}">Edit</button>
+                        </div>
+                    {% endif %}
+                </div>
+                <p id="content{{post.id}}" class="card-text white-space">{{post.content}}</p>
+                
+                <!--Like button and comment area for user authenticated-->
+                {% if user.is_authenticated %}
+                    <!--Like button-->
+                    {% if user in post.likes.all %}
+                        <img id="like{{post.id}}" class="like" data-postid="{{post.id}}" src="{% static 'red-heart.svg' %}" />
+                        <a id="num-like{{post.id}}" class="card-link a-tag likesList" data-postid="{{post.id}}" data-bs-toggle="modal" data-bs-target="#likes{{post.id}}">{{ post.likes.all | length }} like/s</a>
+                    {% else %}
+                        <img id="like{{post.id}}" class="like" data-postid="{{post.id}}" src="{% static 'heart.svg' %}" />
+                        <a id="num-like{{post.id}}" class="card-link a-tag likesList" data-postid="{{post.id}}" data-bs-toggle="modal" data-bs-target="#likes{{post.id}}">{{ post.likes.all | length }} like/s</a>
+                    {% endif %}
+
+                    <!-- Modal Show likes -->
+                    <div class="modal fade" id="likes{{post.id}}" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+                        <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h1 class="modal-title fs-5" id="exampleModalLabel">Likes</h1>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                </div>
+                                <div class="modal-body" id="modal-likes-{{post.id}}">
+                                    <!-- Fetch likes in JS -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!--Button that show the comment area whith the number of comments-->
+                    <button type="button" class="btn btn-secondary comment" data-postid="{{post.id}}">Comment</button>
+                    <p id="number-comments-{{post.id}}" class="number-comments">{{ post.comment.all | length }} comments</p>
+
+                    <!--Comment area container (form and comments)-->
+                    <div id="comment{{post.id}}" class="comment-display">
+                        <!--Form to add a comment-->
+                        <form id="comment-form" data-postid="{{post.id}}" class="border form-tweet write-comment" >
+                            {% if currentUserProfileImage %}
+                                <img src="{{currentUserProfileImage.profile_image.url}}" class="rounded-circle card-img" width="15px" alt="...">
+                            {% else %}
+                                <img src="{% static 'default-profile.png' %}" class="rounded-circle card-img" width="15px" alt="...">
+                            {% endif %}
+                            <input type="text" id="write-comment-{{post.id}}" placeholder="Write a comment..."/><br/>
+                            <input type="submit" id="submit{{post.id}}" style="display:none"/>
+                        </form>
+                        <!--All comments-->
+                        {% for comment in post.comment.all %}
+                        <div id="comment-container-{{post.id}}" class="comment-container border top-card">
+                            <div class="profile-image-comment" id="profile-image-{{comment.id_user}}{{comment.id}}" data-commentid="{{comment.id}}" data-iduser="{{comment.id_user}}"></div>
+                            <div>
+                                <a class="a-tag" href="{% url 'profilePage' comment.id_user %}">{{comment.id_user}}</a>
+                                <div>{{comment.comment}}</div>
+                            </div>
+                        </div>
+                        {% endfor %} 
+                    </div>
+                
+                <!--Like button and comment area for other users-->
+                {% else %}
+                    <!--Like button with no function onli login redirect-->
+                    <a href="{% url 'login' %}"><img src="{% static 'heart.svg' %}" /></a>
+                    <a class="a-tag likesList" data-bs-toggle="modal" data-postid="{{post.id}}" data-bs-target="#likes{{post.id}}">{{post.likes.all | length}} like/s</a>
+
+                    <!-- Modal Show likes -->
+                    <div class="modal fade" id="likes{{post.id}}" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+                        <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h1 class="modal-title fs-5" id="exampleModalLabel">Likes</h1>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                </div>
+                                <div class="modal-body" id="modal-likes-{{post.id}}">
+                                    <!-- Fetch likes in JS -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!--Button that show the comment area whith the number of comments-->
+                    <button type="button" class="btn btn-secondary comment" data-postid="{{post.id}}">Comment</button>
+                    <p id="number-comments-{{post.id}}" class="number-comments">{{ post.comment.all | length }} comments</p>
+
+                    <!--Comment area container-->
+                    <div id="comment{{post.id}}" class="comment-display">
+                        <!--All comments-->
+                        {% for comment in post.comment.all %}
+                        <div id="comment-container-{{post.id}}" class="comment-container border top-card">
+                            <div class="profile-image-comment" id="profile-image-{{comment.id_user}}{{comment.id}}" data-commentid="{{comment.id}}" data-iduser="{{comment.id_user}}"></div>
+                            <div>
+                                <a class="a-tag" href="{% url 'profilePage' comment.id_user %}">{{comment.id_user}}</a>
+                                <div>{{comment.comment}}</div>
+                            </div>
+                        </div>
+                        {% endfor %} 
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    <hr>
+{% endfor %}
+
+<!--Pagination-->
+<nav aria-label="Page navigation example">
+    <ul class="pagination justify-content-center">
+        {% if page_obj.has_previous %}
+        <li class="page-item">
+            <a class="page-link" href="?page=1" aria-label="Previous"><span aria-hidden="true">&laquo; first</span></a>
+        </li>
+        <li class="page-item">
+            <a class="page-link" href="?page={{ page_obj.previous_page_number }}" aria-label="Previous"><span aria-hidden="true">{{ page_obj.previous_page_number }}</span></a>
+        </li>
+        {% endif %}
+
+        <li class="page-item"><a class="page-link" >
+            <span class="current">
+                Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}.
+            </span></a>
+         </li>
+
+        {% if page_obj.has_next %}
+        <li class="page-item">
+            <a class="page-link" href="?page={{ page_obj.next_page_number }}" aria-label="Next"><span aria-hidden="true">{{ page_obj.next_page_number }}</span> </a>
+        </li>
+        <li class="page-item">
+            <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}" aria-label="Next"><span aria-hidden="true">last &raquo;</span></a>
+        </li>
+        {% endif %}
+    </ul>
+</nav>
+{% endblock %}
+
+{% block script %}
+<script src="{% static 'network/inbox.js' %}"></script>
+{% endblock %}
